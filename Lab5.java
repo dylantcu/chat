@@ -27,6 +27,7 @@ public class Lab5 extends JFrame implements ActionListener {
 		setBackground(new Color(154,66,161));
 		chat.setBackground(new Color(202,238,255));
 		userInput.setBackground(new Color(202,238,255));
+		userInput.setText("FORMAT: 'SERVER IP ADDRESS' 'PORT' 'USERNAME'");
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		add(new JLabel
 				(new ImageIcon("/Users/dylanbarth/Desktop/Academic Papers/Cosc/Techniques of Programming/src/chatroom.png")));		
