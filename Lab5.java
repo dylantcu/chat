@@ -1,6 +1,7 @@
 import java.awt.*;
 import java.awt.event.*;
 import java.net.*;
+import java.util.*;
 import java.io.*;
 import javax.swing.*;
 
@@ -13,8 +14,11 @@ public class Lab5 extends JFrame implements ActionListener {
 	JLabel unicodes = new JLabel();
 	JLabel errorLabel = new JLabel();
 	JScrollPane scroller = new JScrollPane();
-	Socket sock;
-	final static int PORT = 4445;
+	Socket socket;
+	BufferedReader in;
+	PrintWriter out;
+	Thread thread;
+	final static int PORT = 4444;
 	static String SERVER = "127.0.0.1";
 	
 	public Lab5(){
@@ -32,7 +36,12 @@ public class Lab5 extends JFrame implements ActionListener {
 		add(send); send.addActionListener(this); send.setEnabled(false);
 		add(connect); connect.addActionListener(this);
 		add(errorLabel);
-		add(unicodes);unicodes.setText("THESE ARE THE CODES FOR UNICODE CHARACTERS");
+		add(unicodes);unicodes.setText("<html>THESE ARE THE CODES FOR UNICODE CHARACTERS:" + "<br>" +
+				"<center>bear-----------ʕ•ᴥ•ʔ<br>" +
+				"hmm----------( ͡° ͜ʖ ͡°)<br>" +
+				"tussle----------(ง ͠° ͟ل͜ ͡°)ง<br>" +
+				"not amused-----ಠ_ಠ<br></center></html>"
+				);
 	}
 
 	
@@ -43,58 +52,45 @@ public class Lab5 extends JFrame implements ActionListener {
 		
 	}
 	
-	public void actionPerformed(ActionEvent e){
-		if(e.getSource().equals(connect)){
-			SERVER = userInput.getText().trim();
-			System.out.println(SERVER);
-			send.setEnabled(true);
-		}
-		if(e.getSource().equals(send)){
-			Socket socket = null;
-			
-			try {
-				socket = new Socket(SERVER, PORT);
-				System.out.print("CONNECTED TO SERVER");
-			} catch (UnknownHostException eh) {
-				System.out.println("Can't find the server");
-				System.exit(1);
-			} catch (IOException el) {
-				System.out.println("Server not responding");
-			}
-			
-			
-			try {
-				BufferedReader user  = new BufferedReader(new InputStreamReader(System.in));
-
-				BufferedReader is = new BufferedReader(new 
-										 InputStreamReader(socket.getInputStream()));
-				PrintWriter os = new PrintWriter(new 
-										 BufferedOutputStream(socket.getOutputStream()));
-
-				String inputLine, resultLine;
-				System.out.print("1");
-				while ((inputLine = is.readLine()) != null) {
-					System.out.print("2");
-					os.println(inputLine);	//send user input to the server
-					os.flush();
-					resultLine = is.readLine();	//read server response
-					chat.setText(chat.getText() + "\n" + resultLine);
-					if (resultLine.equals("quit"))
-						break;
-				}
-				user.close();
-				os.close();
-				is.close();
-				socket.close();
-				System.out.print("3");
-			} 
-			catch (IOException k) {
-				System.out.println("I/O error: " + k);
-			}
-
-
-		}
+	public void actionPerformed(ActionEvent evt) {
 		
+		try {
+			if (evt.getSource().equals(connect) && connect.getText().equals("CONNECT")) {
+				System.out.print("Connect Successfully pressed");
+				Scanner scanner = new Scanner(userInput.getText());
+				if (!scanner.hasNext()) return;
+				String host = scanner.next();
+				if (!scanner.hasNextInt()) return;
+				int port = scanner.nextInt();
+				socket = new Socket(host, port);
+				in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+				out = new PrintWriter(socket.getOutputStream(), false);
+				thread = new ReadThread(in, chat);
+				thread.start();
+				send.setEnabled(true);
+				connect.setText("DISCONNECT");
+				userInput.setText("");
+			}
+			else if (evt.getActionCommand().equals("DISCONNECT")) {
+				thread.interrupt();
+				socket.close();
+				in.close();
+				out.close();
+				send.setEnabled(false);
+				connect.setText("Connect");
+			}
+			else if (evt.getSource().equals(send) && send.isEnabled()) {
+				out.print(userInput.getText() + "\r\n");
+				out.flush();
+				chat.append("> " + userInput.getText() + '\n');
+				userInput.setText("");
+			}
+		} catch(UnknownHostException uhe) {
+			errorLabel.setText(uhe.getMessage());
+		} catch(IOException ioe) {
+			errorLabel.setText(ioe.getMessage());
+		}
 	}
+	
 	
 }
